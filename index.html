@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weathr - Global Weather Forecast App</title>
+<title>Weathr - Global Weather Forecast</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
@@ -26,7 +26,7 @@ body.dark-mode {
 * { box-sizing:border-box; font-family:'Roboto',sans-serif; }
 body {
     margin:0; padding:0;
-    display:flex; justify-content:center; align-items:center;
+    display:flex; justify-content:center; align-items:flex-start;
     min-height:100vh; background:var(--bg-color); color:var(--text-color);
     transition:0.3s; padding:20px;
 }
@@ -36,7 +36,7 @@ body {
     background: var(--bg-color);
     border-radius: 15px;
     padding: 30px 20px;
-    max-width: 420px;
+    max-width: 450px;
     width: 100%;
     border: 1px solid var(--shadow);
     box-shadow: 0 4px 12px var(--shadow);
@@ -54,9 +54,9 @@ body {
 .weather-app h1 { text-align:center; margin-bottom: 15px; font-size: 22px; }
 .weather-app .icon { display:block; margin:0 auto 15px auto; width:60px; height:60px; }
 
-.input-section { display:flex; gap:8px; justify-content:center; margin-bottom:20px; }
+.input-section { display:flex; gap:8px; justify-content:center; margin-bottom:20px; flex-wrap:wrap; }
 .input-section input {
-    flex:1; padding:10px; border-radius:10px; border:1px solid var(--shadow);
+    flex:1 1 60%; padding:10px; border-radius:10px; border:1px solid var(--shadow);
     font-size:14px; outline:none; background: var(--card-bg); color: var(--text-color);
 }
 .input-section button {
@@ -65,25 +65,21 @@ body {
 }
 .input-section button:hover { opacity:0.85; }
 
-.current-weather {
+.current-weather, .hourly, .forecast {
     background: var(--card-bg); border-radius:12px; padding:20px;
-    margin-bottom:20px; text-align:center; box-shadow:0 2px 8px var(--shadow);
+    margin-bottom:20px; box-shadow:0 2px 8px var(--shadow);
 }
 
-.forecast {
-    display:grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr));
-    gap:12px; overflow-x:auto; padding-bottom:10px;
-}
-.forecast-card {
-    background: var(--card-bg); border-radius:12px; padding:10px; text-align:center;
-    font-size:12px; box-shadow:0 1px 6px var(--shadow);
-}
+.hourly { display:flex; overflow-x:auto; gap:10px; }
+.forecast { display:grid; grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap:12px; overflow-x:auto; }
+
+.forecast-card { background: var(--card-bg); border-radius:12px; padding:10px; text-align:center; font-size:12px; box-shadow:0 1px 6px var(--shadow); }
 
 footer { text-align:center; margin-top:12px; font-size:12px; color:var(--text-color); }
 
 @media(max-width:500px){
+    .input-section input { flex:1 1 100%; }
     .forecast { grid-auto-flow: column; grid-template-columns: repeat(7,100px); overflow-x:scroll; }
-    .input-section input { flex:0 1 60%; }
 }
 </style>
 </head>
@@ -101,6 +97,7 @@ footer { text-align:center; margin-top:12px; font-size:12px; color:var(--text-co
     </div>
 
     <div class="current-weather" id="current">Detecting your location...</div>
+    <div class="hourly" id="hourly"></div>
     <div class="forecast" id="forecast"></div>
 
     <footer>© Manik Roy 2025</footer>
@@ -109,82 +106,93 @@ footer { text-align:center; margin-top:12px; font-size:12px; color:var(--text-co
 <script>
 function toggleDarkMode(){ document.body.classList.toggle('dark-mode'); }
 
-// Accurate weather description mapping
 function getWeatherDescription(code){
     switch(code){
-        case 0: return "Clear sky";
-        case 1: return "Mainly clear";
-        case 2: return "Partly cloudy";
-        case 3: return "Overcast";
-        case 45: return "Fog";
-        case 48: return "Depositing rime fog";
-        case 51: return "Light drizzle";
-        case 53: return "Moderate drizzle";
-        case 55: return "Dense drizzle";
-        case 56: return "Light freezing drizzle";
-        case 57: return "Dense freezing drizzle";
-        case 61: return "Slight rain";
-        case 63: return "Moderate rain";
-        case 65: return "Heavy rain";
-        case 66: return "Light freezing rain";
-        case 67: return "Heavy freezing rain";
-        case 71: return "Slight snow fall";
-        case 73: return "Moderate snow fall";
-        case 75: return "Heavy snow fall";
-        case 77: return "Snow grains";
-        case 80: return "Slight rain showers";
-        case 81: return "Moderate rain showers";
-        case 82: return "Violent rain showers";
-        case 85: return "Slight snow showers";
-        case 86: return "Heavy snow showers";
-        case 95: return "Thunderstorm";
-        case 96: return "Thunderstorm with slight hail";
-        case 99: return "Thunderstorm with heavy hail";
+        case 0: return "Clear sky"; case 1: return "Mainly clear"; case 2: return "Partly cloudy";
+        case 3: return "Overcast"; case 45: return "Fog"; case 48: return "Depositing rime fog";
+        case 51: return "Light drizzle"; case 53: return "Moderate drizzle"; case 55: return "Dense drizzle";
+        case 56: return "Light freezing drizzle"; case 57: return "Dense freezing drizzle";
+        case 61: return "Slight rain"; case 63: return "Moderate rain"; case 65: return "Heavy rain";
+        case 66: return "Light freezing rain"; case 67: return "Heavy freezing rain";
+        case 71: return "Slight snow fall"; case 73: return "Moderate snow fall"; case 75: return "Heavy snow fall";
+        case 77: return "Snow grains"; case 80: return "Slight rain showers"; case 81: return "Moderate rain showers";
+        case 82: return "Violent rain showers"; case 85: return "Slight snow showers"; case 86: return "Heavy snow showers";
+        case 95: return "Thunderstorm"; case 96: return "Thunderstorm with slight hail"; case 99: return "Thunderstorm with heavy hail";
         default: return "Unknown";
     }
 }
 
-// Convert city name to latitude & longitude
 async function getCoordinates(city){
     try{
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
         const data = await res.json();
-        if(data && data.length > 0) return {lat: data[0].lat, lon: data[0].lon};
+        if(data && data.length>0) return {lat:data[0].lat, lon:data[0].lon};
         else throw "City not found";
     } catch(e){ throw "Unable to get coordinates"; }
 }
 
-// Fetch weather
 async function fetchWeather(city){
-    const currentDiv=document.getElementById('current');
-    const forecastDiv=document.getElementById('forecast');
-    forecastDiv.innerHTML='';
     try{
-        currentDiv.innerHTML=`Fetching weather for ${city}...`;
         const coords = await getCoordinates(city);
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&current_weather=true&hourly=relativehumidity_2m&timezone=auto`);
+        fetchWeatherByCoords(coords.lat, coords.lon, city);
+    } catch(e){
+        document.getElementById('current').innerHTML = `Unable to fetch weather: ${e}`;
+    }
+}
+
+function updateLastFetched(){
+    const now = new Date();
+    const lastUpdate = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+    const existing = document.getElementById('lastUpdate');
+    if(existing) existing.remove();
+    const p = document.createElement('p');
+    p.id='lastUpdate';
+    p.style.fontSize='10px'; p.style.marginTop='5px';
+    p.textContent=`Last updated: ${lastUpdate}`;
+    document.getElementById('current').appendChild(p);
+}
+
+async function fetchWeatherByCoords(lat, lon, cityName='Current Location'){
+    const currentDiv = document.getElementById('current');
+    const forecastDiv = document.getElementById('forecast');
+    const hourlyDiv = document.getElementById('hourly');
+    forecastDiv.innerHTML=''; hourlyDiv.innerHTML='';
+
+    try{
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,weathercode,relativehumidity_2m&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`);
         const data = await weatherRes.json();
 
         const current = data.current_weather;
         const temp = current.temperature;
         const wind = current.windspeed;
-        const feelsLike = Math.round(13.12 + 0.6215*temp - 11.37*Math.pow(wind,0.16) + 0.3965*temp*Math.pow(wind,0.16));
-        const humidity = data.hourly.relativehumidity_2m[0];
         const weatherDesc = getWeatherDescription(current.weathercode);
-
-        let icon="☀️";
-        if([51,53,55,61,63,65,80,81,82].includes(current.weathercode)) icon="🌧️";
-        else if([71,73,75,77,85,86].includes(current.weathercode)) icon="❄️";
-        else if([95,96,99].includes(current.weathercode)) icon="⛈️";
+        const localTime = new Date(current.time).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
 
         currentDiv.innerHTML=`
-            <h2>${city} ${icon}</h2>
+            <h2>${cityName}</h2>
+            <p><strong>Time:</strong> ${localTime}</p>
             <p><strong>Temp:</strong> ${temp}°C</p>
-            <p><strong>Feels Like:</strong> ${feelsLike}°C</p>
             <p><strong>Weather:</strong> ${weatherDesc}</p>
-            <p><strong>Humidity:</strong> ${humidity}%</p>
             <p><strong>Wind:</strong> ${wind} km/h</p>
         `;
+        updateLastFetched();
+
+        // 24-hour forecast
+        for(let i=0;i<24;i++){
+            const hourTime = new Date(data.hourly.time[i]).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+            const hourTemp = data.hourly.temperature_2m[i];
+            const hourHum = data.hourly.relativehumidity_2m[i];
+            const code = data.hourly.weathercode[i];
+            let icon="☀️";
+            if([51,53,55,61,63,65,80,81,82].includes(code)) icon="🌧️";
+            else if([71,73,75,77,85,86].includes(code)) icon="❄️";
+            else if([95,96,99].includes(code)) icon="⛈️";
+
+            const hourCard = document.createElement('div');
+            hourCard.className='forecast-card';
+            hourCard.innerHTML=`<strong>${hourTime}</strong><div style="font-size:20px">${icon}</div><div>${hourTemp}°C | ${hourHum}%</div>`;
+            hourlyDiv.appendChild(hourCard);
+        }
 
         // 7-day forecast
         for(let i=0;i<7;i++){
@@ -196,41 +204,65 @@ async function fetchWeather(city){
             else if([71,73,75,77,85,86].includes(code)) icon="❄️";
             else if([95,96,99].includes(code)) icon="⛈️";
 
-            const dayName=new Date(data.daily.time[i]).toLocaleDateString('en-US',{ weekday:'short' });
-
-            const card=document.createElement('div');
+            const dayName = new Date(data.daily.time[i]).toLocaleDateString('en-US',{weekday:'short'});
+            const card = document.createElement('div');
             card.className='forecast-card';
-            card.innerHTML=`
-                <strong>${dayName}</strong>
-                <div style="font-size:24px">${icon}</div>
-                <div>${dayMax}°C / ${dayMin}°C</div>
-            `;
+            card.innerHTML=`<strong>${dayName}</strong><div style="font-size:24px">${icon}</div><div>${dayMax}°C / ${dayMin}°C</div>`;
             forecastDiv.appendChild(card);
         }
 
     } catch(e){ currentDiv.innerHTML=`Unable to fetch weather: ${e}`; }
 }
 
+// Auto detect GPS with location name
+function getWeather(){
+    const cityInput = document.getElementById('cityInput');
+    cityInput.value=''; // Clear input
+
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(
+            async (pos)=>{
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                let cityName = 'Current Location';
+                try{
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                    const data = await res.json();
+                    if(data.address){
+                        cityName = data.address.city || data.address.town || data.address.village || data.address.state || 'Current Location';
+                    }
+                }catch(err){ console.warn('Unable to get location name', err); }
+                fetchWeatherByCoords(lat, lon, cityName);
+            },
+            async (err)=>{
+                console.warn(err.message);
+                try{
+                    const ipRes = await fetch('https://ipapi.co/json/');
+                    const ipData = await ipRes.json();
+                    const cityName = ipData.city || 'Current Location';
+                    fetchWeatherByCoords(ipData.latitude, ipData.longitude, cityName);
+                }catch{
+                    document.getElementById('current').innerHTML='Unable to detect location';
+                }
+            },
+            { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+        );
+    } else {
+        document.getElementById('current').innerHTML='Geolocation not supported';
+    }
+}
+
 // Manual search
 function manualWeather(){
-    const city=document.getElementById('cityInput').value.trim();
+    const city = document.getElementById('cityInput').value.trim();
     if(city) fetchWeather(city);
 }
 
-// Auto detect city using IP
-async function getWeather(){
-    const cityInput = document.getElementById('cityInput');
-    cityInput.value = ""; // Clear the input box
-    try{
-        const ipRes = await fetch('https://ipapi.co/json/');
-        const ipData = await ipRes.json();
-        const city = ipData.city || 'London';
-        fetchWeather(city);
-    } catch{ document.getElementById('current').innerHTML="Unable to detect location."; }
-}
+// On page load
+window.onload = getWeather;
 
-// Load on start
-getWeather();
+// Auto-update weather every hour
+setInterval(() => { getWeather(); }, 3600000); // 1 hour interval
 </script>
 
 </body>
